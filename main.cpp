@@ -61,7 +61,7 @@ void readqueue(char output[], Node* &front, Node* &back){
 //Shunting yard algorithm!
 int pres(char c){
 	if(c == '+' || c == '-') return 2;
-	else if(c == 'x' || c == '/') return 3;
+	else if(c == '*' || c == '/') return 3;
 	else if(c =='^') return 4;
 	else return 0;
 }
@@ -71,7 +71,7 @@ void intopost(char* input, Node*& top, Node*& front, Node*& back){
 		// if c is + - * / ^
 		if(c =='+' || c == '-' || c == '*' || c == '/' || c == '^'){
 			while(top != NULL){
-				if(peek(top) != '(' && (pres(c) > pres(peek(top)) || (pres(c) == pres(peek(top)) && c != '^'))){
+				if(peek(top) != '(' && (pres(c) < pres(peek(top)) || (pres(c) == pres(peek(top)) && c != '^'))){
 					enqueue(peek(top), front, back);
 					pop(top);
 				}
@@ -95,6 +95,75 @@ void intopost(char* input, Node*& top, Node*& front, Node*& back){
 			enqueue(c, front, back);
 		}
 	}
+	while(top != NULL){
+	enqueue(peek(top), front, back);
+	pop(top);
+	}
+}
+//Binary expression tree. To build it will require a stack of binary tree nodes
+struct BNode {
+	BNode * right;
+	BNode * left;
+	char data;
+};
+struct StackNode {
+	StackNode * next;
+	BNode * data;
+};
+void push(BNode * node, StackNode* &stacktop){
+	StackNode * newtop = new StackNode();
+	newtop->data = node;
+	newtop->next = stacktop;
+	stacktop = newtop;	
+}
+void pop(StackNode*& stacktop){
+	StackNode * temp = stacktop;
+	if(temp != NULL){
+		stacktop = stacktop->next;
+		delete temp;
+	}
+}
+void createtree(BNode*& head, char output[]){
+	//the tree must be built using a stack, but it won't be necessary elsewhere
+	StackNode * stacktop = NULL;
+	for(int i=0; output[i] != '\0'; i++){
+		char c = output[i];
+		BNode * newnode = new BNode();
+		newnode->right = NULL;
+		newnode->left = NULL;
+		newnode->data = c;
+		if(c =='+' || c == '-' || c == '*' || c == '/' || c == '^'){
+			newnode->right = stacktop->data;
+			newnode->left = stacktop->next->data;
+			stacktop = stacktop->next->next;
+			push(newnode, stacktop);
+		}
+		else{
+			push(newnode, stacktop);
+		}
+		head = newnode;
+	}
+}
+void prefix(BNode * head){
+	if(head){
+	cout << head->data;
+	prefix(head->left);
+	prefix(head->right);
+	}
+}
+void postfix(BNode * head){
+	if(head){
+	postfix(head->left);
+	postfix(head->right);
+	cout << head->data;
+	}
+}
+void infix(BNode * head){
+	if(head){
+	infix(head->left);
+	cout << head->data;
+	infix(head->right);
+	}
 }
 int main(){
 	//initialize stack and queue
@@ -104,14 +173,34 @@ int main(){
 
 	//prompt user for infix
 	cout << "This is my Shanty Bard algorithm. Please enter an integer expression with the operations {+,-,*,/,^} in infix without spaces:" << endl;
-	char* input;
+	char * input;
+	input = new char();
 	char output[100];
 	cin.getline(input,100,'\n');
-	cout << "got input" << endl;
 	intopost(input, top, front, back);
-	cout << "did intopost" << endl;
 	readqueue(output, front, back);
-	cout << "did readqueue" << endl;
-	cout << output;
+	cout << "Your expression in postfix: " << output << endl;
+	//expression tree part
+	BNode * head = NULL;
+	createtree(head, output);
+	bool quit = false;
+	while(quit == false){
+	cout << endl << "What form would you like your expression? Infix, Prefix, or Postfix? (or Quit): ";
+	char * input2;
+	input2 = new char();
+	cin.getline(input2,100,'\n');
+	if(strcmp(input2, "Infix")==0){
+		infix(head);
+	}
+	else if(strcmp(input2, "Prefix")==0){
+		prefix(head);
+	}
+	else if(strcmp(input2, "Postfix")==0){
+		postfix(head);
+	}
+	else {
+		quit = true;
+	}
+	}
 	return 0;
 }
